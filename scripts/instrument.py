@@ -67,8 +67,12 @@ def main(argv=None):
         if a.action == "idn":
             print(inst.query("*IDN?").strip())
         elif a.action == "query":
-            if not a.command or not a.command.strip().endswith("?"):
-                ap.error("query needs a command ending in '?'")
+            cmd = (a.command or "").strip()
+            # SCPI chains commands with ';' - ":OUTP ON;*IDN?" ends in '?' but keys the output
+            is_single_query = cmd.endswith("?") and not any(ch in cmd for ch in ";\r\n")
+            if not is_single_query and not a.allow_write:
+                ap.error("query must be a single command ending in '?' (no ';' chaining); "
+                         "anything else needs --allow-write")
             print(inst.query(a.command).strip())
         elif a.action == "write":
             if not a.allow_write:
