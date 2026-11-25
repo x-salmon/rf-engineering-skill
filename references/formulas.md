@@ -59,3 +59,32 @@ Load this when you need to show working or check a hand calculation.
 | 300-1500 | f/1500 | f/300 |
 | 1500-100000 | 1.0 | 5.0 |
 OET-65 ground reflection factor 2.56 applied to S = EIRP/(4 pi d^2) by default.
+
+## Diffraction and ITU-R
+- Knife edge (P.526): v = h sqrt(2 (d1+d2) / (lambda d1 d2)); J(v) = 6.9 + 20 log(sqrt((v-0.1)^2+1) + v - 0.1) for v > -0.78
+- Deygout: the main edge, then the worst edge on each side of it (depth 2)
+- Rain (P.530-17): gamma = k R^alpha; A001 = gamma d r, with r = 1/(0.477 d^0.633 R^(0.073 alpha) f^0.123 - 10.579 (1 - e^(-0.024 d)))
+- A_p = A001 C1 p^-(C2 + C3 log p); C0 = 0.12 + 0.4 log((f/10)^0.8) for f >= 10 GHz, else 0.12
+
+## Digital comms
+- BPSK/QPSK: Pb = Q(sqrt(2 Eb/N0)). M-PSK ~ (2/k) Q(sqrt(2k Eb/N0) sin(pi/M)). M-QAM ~ (4/k)(1 - 1/sqrt M) Q(sqrt(3k Eb/N0 / (M-1)))
+- Occupied BW = Rs (1 + alpha); SNR = Eb/N0 + 10 log(Rb/B); Shannon C = B log2(1 + SNR), limit -1.59 dB
+
+## Satellite and radar
+- C/N0 = EIRP - FSPL - L + G/T + 228.6; Tsys = Ta/L + T0 (1 - 1/L) + Te
+- Orbit v = sqrt(mu / r); range rate at elevation e = v Re cos(e) / r
+- Radar: R^4 = Pt G^2 lambda^2 sigma n / ((4 pi)^3 k T0 B F L SNR); Rua = c / (2 PRF); vua = lambda PRF / 4; dR = c tau / 2
+- Polarization: PLF = 1/2 + [4 r1 r2 + (1 - r1^2)(1 - r2^2) cos 2 dtau] / [2 (1 + r1^2)(1 + r2^2)], with signed axial ratios
+
+## Phase noise and mixers
+- phi_rms = sqrt(2 * integral of L(f) df); jitter = phi_rms / (2 pi f0); power-law integration between points
+- Reciprocal mixing noise = P_blocker + L(df) + 10 log B
+- Spurs: solve |m LO +/- n f_in| = IF for f_in. Low-side image = RF - 2 IF
+
+## Matching, filters, antennas
+- Pi: Rv = Rhi / (Q^2 + 1). T: Rv = Rlo (Q^2 + 1). Each side is then an L-section to Rv
+- Bessel: Darlington synthesis of S21 = theta_n(0) / theta_n(s), with a Cauer expansion of Zin = (D+N)/(D-N)
+- ULA: AF = sin(N psi / 2) / (N sin(psi / 2)), psi = kd sin(theta) + beta; no grating lobe if d/lambda < 1 / (1 + |sin theta0|)
+- Isolation: horizontal 22 + 20 log(d/lambda) - G1 - G2; vertical about 28 + 40 log(d/lambda)
+- Helix (Kraus): C ~ lambda, S ~ lambda/4, G = 15 C^2 N S / lambda^3, R ~ 140 C / lambda
+- Patch (Balanis): W = c/(2f) sqrt(2/(er+1)); L = c/(2f sqrt(eeff)) - 2 dL

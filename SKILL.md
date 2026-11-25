@@ -1,6 +1,6 @@
 ---
 name: rf-engineering
-description: RF and radio engineering calculator with references. Use for any RF math or radio-system question - dBm/W/uV conversions, link budgets, path loss (free-space, Hata, two-ray), Fresnel zones and radio horizon, noise floor and sensitivity, Friis noise/IP3 cascades, IMD products, VSWR/return loss/mismatch, coax cable loss, microstrip/coax impedance, L-matching, LC filter design, antenna gain/aperture, field strength, Doppler, FCC RF exposure (MPE), aviation VHF 8.33/25 kHz channel names, Touchstone .s1p/.s2p sweep analysis, spectrum-analyzer/sig-gen control over VISA, and install/test checklists (grounding, connector torque, sweep acceptance, FAT/SAT).
+description: RF and radio engineering calculator with references. Use for any RF math or radio-system question - dBm/W/uV conversions, link budgets, path loss (free-space, Hata, two-ray), terrain path profiles with knife-edge/Deygout diffraction, ITU-R rain fade (P.530/P.838) and gas absorption (P.676), Fresnel zones and radio horizon, BER/Eb/N0/Shannon capacity, satellite look angles/G/T/C/N0/orbit Doppler, radar range equation, polarization loss, phase noise to jitter, reciprocal mixing, mixer spur/image planning, Bessel/elliptic filters, Pi/T/stub matching, E-series parts, antenna arrays/isolation/helix/patch, plots (Smith, path profile), noise floor and sensitivity, Friis noise/IP3 cascades, IMD products, VSWR/return loss/mismatch, coax cable loss, microstrip/coax impedance, L-matching, LC filter design, antenna gain/aperture, field strength, Doppler, FCC RF exposure (MPE), aviation VHF 8.33/25 kHz channel names, Touchstone .s1p/.s2p sweep analysis, spectrum-analyzer/sig-gen control over VISA, and install/test checklists (grounding, connector torque, sweep acceptance, FAT/SAT).
 ---
 
 # RF engineering
@@ -45,6 +45,48 @@ command for structured output. `rfcalc.py <cmd> -h` lists every option.
 | RF exposure | `mpe 125MHz 50 --d 2m` (EIRP in W; `--occupational`) |
 | ATC channel | `atc 118.010` / `atc 132.0916667 --freq` |
 
+### Propagation (rfpath)
+| Task | Command |
+|---|---|
+| Knife-edge diffraction (P.526) | `knife 1GHz 5km 5km 10m` (h = edge height above LOS) |
+| Terrain profile + Deygout | `profile 6GHz --fetch LAT1 LON1 LAT2 LON2 --htx 30m --hrx 30m --save p.csv`, or `--csv p.csv` |
+| Rain fade (P.530/P.838/P.837) | `rain 23GHz 15km --p 0.01 --lat 40 --lon -105`, or `--r001 42 --k .. --alpha ..` |
+| Gas absorption (P.676) | `gas 60GHz 1km` |
+
+`--fetch` sends coordinates to opentopodata.org. **Ask before fetching private site coordinates.**
+`rain --lat/--lon` and `gas` need `pip install itur`.
+
+### Comms, satellite, radar (rfcomms)
+| Task | Command |
+|---|---|
+| BER / required Eb/N0 / bandwidth | `ber 64qam --target 1e-6 --rb 10M --rolloff 0.2` (bpsk qpsk dbpsk bfsk ncfsk ook Npsk Nqam) |
+| Shannon | `shannon 20MHz --snr 15` / `shannon 20MHz --rate 100M` |
+| Satellite look angles | `look 39.74 -104.99 --sat-lon -101` (GEO default; `--sat-lat --sat-alt` otherwise) |
+| Satellite link | `satlink --eirp 52 --f 12GHz --range 38000km --gt 18 --losses 1 --rb 20M` |
+| System temperature | `tsys 50 75 --feed-loss 0.3` |
+| Orbit / Doppler | `orbit 550km --f 12GHz --min-el 25` |
+| Polarization loss | `polloss 0 40 --tilt 0` (axial ratios in dB; `--opposite` for opposite sense) |
+| Radar | `radar --pt 1M --g 33 --f 2.8GHz --rcs 1 --bw 1MHz --nf 4 --prf 1k --pulse 1us --pulses 10` |
+| Phase noise to jitter | `jitter 100MHz 1k:-120 10k:-140 1M:-155 --from 12k --to 1M` |
+| Reciprocal mixing | `recipmix -30 -125 25kHz --sens -110 --snr 10` |
+| Mixer plan | `mixer 88MHz 108MHz 10.7MHz --side low --order 5` |
+
+### Design (rfdesign)
+| Task | Command |
+|---|---|
+| Bessel prototype | `bessel 4` (or `filter 5 50MHz --kind bessel`) |
+| Elliptic order + notches | `elliptic 10MHz 13MHz --ripple 0.5 --atten 60` (scipy) |
+| Pi / T match | `pimatch 12.5 50 145MHz --q 5` / `tmatch 50 10 100MHz --q 4` |
+| Stub match | `stub 30+40j` / `stub 25-30j --double 0.125 --open` |
+| Standard values | `eseries 3.3k --series E12`, or `--snap E24` before any command |
+| Array | `array 8 0.5 --steer 30` |
+| Antenna isolation | `isolation 150MHz 4m --mode vertical` |
+| Helix / patch | `helix 1.2GHz 10` / `patch 2.45GHz --er 4.4 --h 1.6mm` |
+
+## Plots: `scripts/rfplot.py` (matplotlib)
+`smith f.s1p`, `sweep f.s2p`, `filter 5 --kind chebyshev`, `profile p.csv --f 6GHz --htx 30 --hrx 30`,
+`array 8 0.5 --steer 20`, each with `--out file.png`. Show the PNG to the user with the Read tool.
+
 ## Sweep files: `scripts/touchstone.py`
 `touchstone.py file.s1p --rl 14 --at 118MHz 137MHz --csv out.csv` reports best match, the band that meets
 the RL threshold, IL / -3 dB passband / group delay for .s2p, and values at chosen frequencies.
@@ -68,4 +110,7 @@ the RL threshold, IL / -3 dB passband / group delay for .s2p, and values at chos
 3. Cable coefficients and checklist values are typical. Tell the user to confirm them against the datasheet
    or the governing spec before sign-off.
 4. MPE output is a screening estimate, not a compliance study.
-5. Use scikit-rf/scipy only for work the scripts don't cover, and check the current API through context7 first.
+5. Optional extras (scipy, itur, matplotlib, pyvisa) are listed in `requirements-optional.txt`. If one is
+   missing, say so and give the install command.
+6. `docs/examples.md` has 22 worked problems with real output; use them as answer templates.
+7. Use scikit-rf/scipy only for work the scripts don't cover, and check the current API through context7 first.

@@ -11,18 +11,26 @@ C0 = 299_792_458.0  # m/s
 MU0 = 4e-7 * math.pi  # H/m (within 1e-9 of the CODATA value)
 ETA0 = 376.730313  # ohm, free-space impedance
 
-# Times Microwave-style attenuation model: dB/100 ft = k1*sqrt(f_MHz) + k2*f_MHz.
-# Coefficients reproduce published datasheet tables within ~5 %. Always confirm against
-# the datasheet for the exact part before signing off a link budget.
+# Attenuation model: dB/100 ft = k1*sqrt(f_MHz) + k2*f_MHz  (conductor + dielectric loss).
+# (k1, k2, velocity factor, max_MHz). CABLE_CHECKED lists cables whose fit is pinned by
+# tests to published datasheet points; the rest are approximate fits to typical tables.
 CABLES = {
-    "lmr-195": (0.37889, 0.00045, 0.80),
-    "lmr-240": (0.24208, 0.00033, 0.84),
-    "lmr-400": (0.12229, 0.00026, 0.85),
-    "lmr-600": (0.07228, 0.00026, 0.87),
-    "lmr-900": (0.04821, 0.00022, 0.87),
-    "rg-58": (0.45, 0.006, 0.66),
-    "rg-8x": (0.30, 0.004, 0.78),
-    "rg-213": (0.20, 0.0018, 0.66),
+    "lmr-195": (0.358, 0.00040, 0.80, 6000),
+    "lmr-240": (0.24208, 0.00033, 0.84, 6000),
+    "lmr-400": (0.12229, 0.00026, 0.85, 6000),
+    "lmr-600": (0.07228, 0.00026, 0.87, 6000),
+    "lmr-900": (0.04821, 0.00022, 0.87, 5000),
+    "rg-58": (0.45, 0.006, 0.66, 3000),
+    "rg-8x": (0.30, 0.004, 0.78, 3000),
+    "rg-213": (0.20, 0.0018, 0.66, 3000),
+    "ldf4-50a": (0.0660, 0.000208, 0.88, 8800),   # 1/2 in air-foam Heliax
+    "ldf5-50a": (0.0358, 0.000146, 0.89, 5000),   # 7/8 in air-foam Heliax
+    "ut-141": (0.4024, 0.000276, 0.70, 18000),    # 0.141 in semi-rigid, PTFE
+}
+CABLE_CHECKED = {
+    # cable: [(MHz, dB/100ft datasheet), ...]
+    "lmr-400": [(150, 1.5), (900, 3.9), (2500, 6.8), (5800, 10.8)],
+    "lmr-240": [(900, 7.6), (2500, 12.9)],
 }
 FT_PER_M = 3.28084
 
@@ -212,12 +220,15 @@ def cable_loss(cable, f_mhz, length_m, k1=None, k2=None):
         if key not in CABLES:
             raise ValueError(f"unknown cable '{cable}'; known: {', '.join(CABLES)} "
                              "(or pass --k1/--k2 from the datasheet)")
-        k1, k2, vf = CABLES[key]
+        k1, k2, vf, f_max = CABLES[key]
+        if f_mhz > f_max:
+            raise ValueError(f"{cable} is rated to {f_max} MHz")
     per100ft = k1 * math.sqrt(f_mhz) + k2 * f_mhz
     per_m = per100ft / 100 * FT_PER_M
     return {"cable": cable, "f_MHz": f_mhz, "dB_per_100ft": per100ft,
             "dB_per_100m": per_m * 100, "length_m": length_m,
             "total_loss_dB": per_m * length_m, "velocity_factor": vf,
+            "checked_against_datasheet": key in CABLE_CHECKED,
             "note": "model fit; confirm against the part datasheet"}
 
 
@@ -320,11 +331,14 @@ def reactance(f_hz, l_h=None, c_f=None):
 def prototype(n, kind="butterworth", ripple_db=0.5):
     if n < 1 or n > 15:
         raise ValueError("order must be 1..15")
+    if kind == "bessel":
+        from rfdesign import bessel_g  # lazy: rfdesign imports rfcore
+        return bessel_g(n), 1.0
     if kind == "butterworth":
         g = [2 * math.sin((2 * k - 1) * math.pi / (2 * n)) for k in range(1, n + 1)]
         return g, 1.0
     if kind != "chebyshev":
-        raise ValueError("kind is butterworth or chebyshev")
+        raise ValueError("kind is butterworth, chebyshev or bessel")
     beta = math.log(1 / math.tanh(ripple_db / 17.37))
     gam = math.sinh(beta / (2 * n))
     a = [math.sin((2 * k - 1) * math.pi / (2 * n)) for k in range(1, n + 1)]

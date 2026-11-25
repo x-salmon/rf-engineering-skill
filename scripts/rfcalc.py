@@ -10,41 +10,13 @@ import math
 import re
 import sys
 
+import rfcomms
 import rfcore as c
+import rfdesign
+import rfpath
 import rfprop as p
 
-_PREFIX = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "m": 1e-3, "": 1.0,
-           "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9, "T": 1e12}
-_LENGTH = {"km": 1e3, "m": 1.0, "cm": 1e-2, "mm": 1e-3, "mi": 1609.344, "nmi": 1852.0,
-           "ft": 0.3048, "in": 0.0254}
-
-
-def qty(text, base_unit):
-    """Parse '2.4GHz' -> 2.4e9. base_unit is the SI unit letter(s) to strip (Hz, H, F)."""
-    s = str(text).strip().replace(" ", "")
-    if base_unit and s.lower().endswith(base_unit.lower()):
-        s = s[: -len(base_unit)]
-    # prefixes are case-sensitive (m = milli, M = mega), so no re.I here
-    m = re.fullmatch(r"([-+]?[\d.]+(?:[eE][-+]?\d+)?)([pnuµmkKMGT]?)", s)
-    if not m:
-        raise argparse.ArgumentTypeError(f"cannot parse '{text}' as {base_unit or 'number'}")
-    return float(m.group(1)) * _PREFIX[m.group(2)]
-
-
-def freq(text):
-    return qty(text, "Hz")
-
-
-def dist(text):
-    s = str(text).strip().replace(" ", "")
-    m = re.fullmatch(r"([-+]?[\d.]+(?:e[-+]?\d+)?)(km|nmi|mi|cm|mm|m|ft|in)?", s)
-    if not m:
-        raise argparse.ArgumentTypeError(f"cannot parse distance '{text}'")
-    return float(m.group(1)) * _LENGTH[m.group(2) or "m"]
-
-
-def cplx(text):
-    return complex(str(text).replace(" ", "").replace("i", "j"))
+from rfargs import cplx, dist, freq, qty  # noqa: F401 (re-exported)
 
 
 def fmt(v):
@@ -101,6 +73,8 @@ def build_parser():
     ap = argparse.ArgumentParser(prog="rfcalc", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--json", action="store_true", help="emit JSON")
+    ap.add_argument("--snap", choices=list(rfdesign.SERIES),
+                    help="add nearest standard values for every L/C in the result")
     sp = ap.add_subparsers(dest="cmd", required=True)
 
     a = sp.add_parser("convert", help="dBm/W/V/uV/dBuV conversions")
@@ -218,7 +192,7 @@ def build_parser():
     a.add_argument("order", type=int)
     a.add_argument("f1", type=freq, help="cutoff, or lower edge for bandpass")
     a.add_argument("--f2", type=freq, help="upper edge for bandpass")
-    a.add_argument("--kind", default="butterworth", choices=["butterworth", "chebyshev"])
+    a.add_argument("--kind", default="butterworth", choices=["butterworth", "chebyshev", "bessel"])
     a.add_argument("--resp", default="lowpass", choices=["lowpass", "highpass", "bandpass"])
     a.add_argument("--ripple", type=float, default=0.5)
     a.add_argument("--z0", type=float, default=50.0)
@@ -284,10 +258,15 @@ def build_parser():
     a.add_argument("value", help="channel name like 118.010, or frequency with --freq")
     a.add_argument("--freq", action="store_true", help="value is a frequency in MHz")
     a.add_argument("--spacing", type=float, default=8.33)
+
+    for mod in (rfpath, rfcomms, rfdesign):
+        mod.register(sp)
     return ap
 
 
 def run(args):
+    if getattr(args, "func", None):
+        return args.func(args)
     cmd = args.cmd
     if cmd == "convert":
         return c.convert_power(args.value, args.unit, args.z0)
@@ -380,17 +359,33 @@ def run(args):
     raise ValueError(f"unknown command {cmd}")
 
 
-_NEG_STAGE = re.compile(r"^-[\d.]+:")
+def snap_values(obj, series):
+    """Return a copy with '<key>_<series>' added beside every *_H / *_F value."""
+    if isinstance(obj, list):
+        return [snap_values(x, series) for x in obj]
+    if not isinstance(obj, dict):
+        return obj
+    out = {}
+    for k, v in obj.items():
+        out[k] = snap_values(v, series)
+        if isinstance(v, float) and v > 0 and k.endswith(("_H", "_F")):
+            out[f"{k}_{series}"] = rfdesign.nearest(v, series)["nearest"]
+    return out
+
+
+_NEG_STAGE = re.compile(r"^-[\d.]+(?:e-?\d+)?:|^[\d.]+[kMG]?:-")
 
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     # argparse reads "-3:3" (a passive -3 dB stage) as a flag; shield it with "~"
-    argv = ["~" + a[1:] if _NEG_STAGE.match(a) else a for a in argv]
+    argv = [a.replace("-", "~") if _NEG_STAGE.match(a) else a for a in argv]
     args = build_parser().parse_args(argv)
     try:
         result = run(args)
-    except (ValueError, ZeroDivisionError) as exc:
+        if args.snap:
+            result = snap_values(result, args.snap)
+    except (ValueError, ZeroDivisionError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     if args.json:
