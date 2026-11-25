@@ -6,7 +6,7 @@ bands, formulas and install/acceptance standards. Everything runs on the Python 
 
 ## Install
 ```bash
-git clone https://github.com/<you>/rf-engineering-skill ~/.claude/skills/rf-engineering
+git clone https://github.com/x-salmon/rf-engineering-skill ~/.claude/skills/rf-engineering
 ```
 Claude loads it automatically when a question involves RF. It also works without Claude:
 ```bash
