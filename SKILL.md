@@ -6,7 +6,7 @@ description: RF and radio engineering calculator with references. Use for any RF
 # RF engineering
 
 Run the math, don't estimate it. Every number in an answer should come from a script, with the command
-shown so the user can rerun it. Python 3.9+ standard library only. Scripts live in `scripts/` next to this file.
+shown so the user can rerun it. Python 3.10+ standard library only. Scripts live in `scripts/` next to this file.
 
 ## Calculator: `scripts/rfcalc.py`
 

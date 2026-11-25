@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rf-engineering-skill"
+version = "2.1.0"
+description = "RF engineering calculators: links, terrain, ITU-R, comms, satellite, radar, filters, matching, antennas"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+full = ["scipy>=1.10", "matplotlib>=3.7", "itur>=0.4", "pyvisa>=1.13", "pyvisa-py>=0.7"]
+
+[project.scripts]
+rfcalc = "rfcalc:main"
+rfplot = "rfplot:main"
+touchstone = "touchstone:main"
+rfinstrument = "instrument:main"
+
+[tool.setuptools]
+package-dir = { "" = "scripts" }
+py-modules = ["rfargs", "rfcalc", "rfcomms", "rfcore", "rfdesign", "rfpath", "rfplot",
+              "rfprop", "touchstone", "instrument"]

@@ -6,13 +6,14 @@ A Claude Code / Claude Agent skill that makes Claude run real RF math instead of
 It has about 60 calculators covering links, terrain, ITU-R rain and gas, digital comms, satellite, radar,
 phase noise, mixers, filters, matching and antennas. It also includes a Touchstone sweep analyzer, plots, a
 VISA instrument driver, and reference sheets for bands, formulas and install/acceptance standards.
-The core runs on the Python 3.9+ standard library. `requirements-optional.txt` adds plots, ITU data maps,
+The core runs on the Python 3.10+ standard library. `requirements-optional.txt` adds plots, ITU data maps,
 elliptic filters and instrument control.
 
 ## Install
 ```bash
 git clone https://github.com/x-salmon/rf-engineering-skill ~/.claude/skills/rf-engineering
 pip install -r ~/.claude/skills/rf-engineering/requirements-optional.txt   # optional
+# or as a CLI anywhere: pip install "rf-engineering-skill[full] @ git+https://github.com/x-salmon/rf-engineering-skill"
 ```
 Claude loads it automatically when a question involves RF. It also works without Claude:
 ```bash
@@ -41,7 +42,7 @@ See **[docs/examples.md](docs/examples.md)** for 22 worked problems with real ou
 `tools/gen_examples.py`, so the outputs always match the code.
 
 ## Validation
-70 tests run in CI on Linux and Windows, with Python 3.9 and 3.13, both with and without the optional extras.
+70 tests run in CI on Linux and Windows, with Python 3.10 and 3.13, both with and without the optional extras.
 They check against published values: kT = -174 dBm/Hz, FSPL, the Matthaei Chebyshev and Bessel tables,
 P.526 knife-edge (6 dB at grazing), P.838 coefficients, Hata, BPSK 9.6 dB at 1e-5, the Shannon limit, ISS orbit,
 patch dimensions (Balanis), and LMR datasheet points. Matching networks are checked by building the network

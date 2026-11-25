@@ -74,6 +74,8 @@ def fetch_profile(lat1, lon1, lat2, lon2, n=TOPO_MAX_POINTS, dataset="srtm30m"):
     if data.get("status") != "OK":
         raise ValueError(f"elevation service error: {data.get('error', data.get('status'))}")
     elev = [r.get("elevation") for r in data["results"]]
+    if len(elev) != len(pts):
+        raise ValueError(f"elevation service returned {len(elev)} of {len(pts)} points")
     if any(e is None for e in elev):
         raise ValueError("elevation service returned gaps (sea or outside dataset)")
     return [(d, float(e)) for (_, _, d), e in zip(pts, elev)]
