@@ -131,7 +131,7 @@ the RL threshold, IL / -3 dB passband / group delay for .s2p, and values at chos
 5. Optional extras (scipy, itur, matplotlib, pyvisa) are listed in `requirements-optional.txt`. If one is
    missing, say so and give the install command.
 6. `docs/examples.md` has 28 worked problems with real output; use them as answer templates.
-7. Detection ranges are free-space upper bounds. Give a band across several RCS or EIRP values, and say
+7. Detection ranges are clutter-free upper bounds. Give a band across several RCS or EIRP values, and say
    that clutter, multipath, terrain masking and target aspect usually cut them. Use only generic, public
    engineering: no specific operator's or vendor's system parameters.
 8. Use scikit-rf/scipy only for work the scripts don't cover, and check the current API through context7 first.
