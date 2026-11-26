@@ -1,0 +1,128 @@
+{
+  "skill_name": "rf-engineering",
+  "_note": "prompt/expected_output/expectations follow the skill-creator schema. 'command' and 'checks' are extras: tests/test_evals.py runs each command with --json and asserts every check (dotted key path -> [value, tolerance]) so the reference answers stay correct.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a 900 MHz link over 5 km: 30 dBm radio, 6 dBi base antenna 30 m up, 3 dBi handheld at 1.5 m, 2 dB cable loss each end. Receiver NF 7 dB, 200 kHz channel, needs 9 dB SNR. Will it close with 99% reliability in Rayleigh fading over average ground?",
+      "expected_output": "A link-budget table using the two-ray model over average ground: EIRP 34 dBm, path loss about 115.1 dB, received about -80.1 dBm, sensitivity about -105.0 dBm, required Rayleigh fade margin 20.0 dB, excess margin about +4.9 dB, so the link closes. Max range is about 6.6 km and the radio horizon about 27.6 km.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py budget with --model tworay --ht 30m --hr 1.5m",
+        "Reports EIRP, path loss, received level, sensitivity, fade margin and excess margin as a table",
+        "Uses a Rayleigh fade margin of about 20 dB for 99 %",
+        "States the link closes with roughly 5 dB of excess margin",
+        "States the assumptions: two-ray, flat earth, average ground, k = 4/3"
+      ],
+      "command": "budget --f 900MHz --d 5km --ptx 30 --gtx 6 --grx 3 --ltx 2 --lrx 2 --bw 200kHz --nf 7 --snr 9 --reliability 99 --model tworay --ht 30m --hr 1.5m",
+      "checks": {
+        "eirp_dBm": [34, 0.001],
+        "required_fade_margin_db": [19.98, 0.01],
+        "excess_margin_db": [4.93, 0.05],
+        "closes": [true, 0],
+        "max_range_km": [6.65, 0.05]
+      }
+    },
+    {
+      "id": 2,
+      "prompt": "6 GHz hop, 20 km. TX antenna at 140 m ASL, RX at 120 m ASL. There's a ridge 8 km from the TX whose top is 110 m ASL. Do I have 60% first-Fresnel clearance at k = 4/3, and if not how much higher do both towers need to go?",
+      "expected_output": "Line of sight crosses the ridge at 132 m; earth bulge is about 5.65 m, F1 is about 15.49 m, clearance about 16.35 m (106 % of F1), so it meets 60 % with no extra height and no diffraction loss.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py clearance 6GHz 20km 8km with the three heights",
+        "Includes earth bulge in the clearance",
+        "Reports clearance as a percentage of F1 and says it meets 60 %",
+        "Suggests checking k = 2/3 as well, or mentions that k varies"
+      ],
+      "command": "clearance 6GHz 20km 8km --htx 140m --hrx 120m --hobs 110m",
+      "checks": {
+        "los_height_m": [132, 0.001],
+        "earth_bulge_m": [5.65, 0.01],
+        "fresnel_f1_m": [15.49, 0.01],
+        "clearance_pct_f1": [105.6, 0.2],
+        "meets_requirement": [true, 0],
+        "raise_both_ends_by_m": [0, 0.001]
+      }
+    },
+    {
+      "id": 3,
+      "prompt": "How much fade margin do I need for 99.9% availability on a non-line-of-sight mobile link?",
+      "expected_output": "About 30 dB under Rayleigh fading (10 dB per decade of outage: 90 % = 9.8 dB, 99 % = 20 dB, 99.9 % = 30 dB), with a note that line-of-sight (Rician) links need less.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py fademargin --reliability 99.9",
+        "Answers about 30 dB",
+        "Names Rayleigh as the assumption and notes a line-of-sight link needs less"
+      ],
+      "command": "fademargin --reliability 99.9",
+      "checks": {"fade_margin_db": [30.0, 0.01]}
+    },
+    {
+      "id": 4,
+      "prompt": "Rough detection range for a small quadcopter with a 10 W peak X-band (10 GHz) radar: 30 dBi antenna, 1 MHz bandwidth, 5 dB NF, 6 dB losses, 64 pulses coherently integrated, Pd 0.9 at Pfa 1e-6. Radar is 5 m up and the drone flies at 100 m.",
+      "expected_output": "Required SNR 13.1 dB (Albersheim). Free-space range is about 1.3 km at 0.01 m^2 and 2.3 km at 0.1 m^2, well inside the 50 km radar horizon. The answer is a range band across RCS values, with a warning that clutter, multipath and aspect make it an upper bound.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py detect-radar with several --rcs values rather than one",
+        "Explains where the required SNR comes from (Pd/Pfa, Albersheim)",
+        "Gives the answer as a range band, about 1.3 to 2.3 km",
+        "Warns that clutter, multipath and RCS aspect variation make it an optimistic estimate"
+      ],
+      "command": "detect-radar --pt 10 --g 30 --f 10GHz --rcs 0.01 0.1 --bw 1MHz --nf 5 --losses 6 --pulses 64 --hradar 5m --htarget 100m",
+      "checks": {
+        "required_snr_db": [13.11, 0.01],
+        "ranges.0.free_space_range_km": [1.294, 0.005],
+        "ranges.1.free_space_range_km": [2.302, 0.005],
+        "radar_horizon_km": [50.43, 0.05]
+      }
+    },
+    {
+      "id": 5,
+      "prompt": "A drone's 2.4 GHz video downlink puts out about 20 dBm EIRP in a 10 MHz channel. My passive receiver has a 10 dBi antenna 10 m up, 6 dB NF and needs 10 dB SNR. How far out can I hear a drone at 100 m altitude?",
+      "expected_output": "Sensitivity about -88.0 dBm and allowed path loss about 118 dB. Free space gives about 7.7 km. Two-ray over average ground gives continuous coverage only to about 2.7 km, where a multipath null breaks it. Lobes reach out to about 12.4 km, but that coverage is intermittent. All of this is inside the 54 km horizon. Emitter power and duty cycle vary by model.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py detect-rf with --hsensor and --htarget",
+        "Reports both the free-space and two-ray ranges",
+        "Quotes about 2.7 km as continuous two-ray coverage and calls the 12.4 km lobe intermittent, not the detection range",
+        "Cautions that emitter EIRP and duty cycle vary"
+      ],
+      "command": "detect-rf --eirp 20 --f 2.44GHz --bw 10MHz --nf 6 --g 10 --hsensor 10m --htarget 100m",
+      "checks": {
+        "sensitivity_dBm": [-87.98, 0.01],
+        "free_space_range_km": [7.744, 0.01],
+        "two_ray_range_km": [2.69, 0.02],
+        "last_lobe_km": [12.4, 0.1]
+      }
+    },
+    {
+      "id": 6,
+      "prompt": "At 900 MHz, 3 km apart, with a 30 m base and a 1.5 m mobile, how much worse is two-ray over average ground than free space, and am I past the breakpoint?",
+      "expected_output": "Free space is 101.1 dB and two-ray is about 106.4 dB, about 5.3 dB worse. The crossover is about 1.7 km, so 3 km is past the breakpoint and loss rises at about 40 dB/decade.",
+      "files": [],
+      "expectations": [
+        "Runs rfcalc.py pathloss 900MHz 3km 30m 1.5m",
+        "Gives both losses and the difference",
+        "States the crossover distance and that 3 km is beyond it"
+      ],
+      "command": "pathloss 900MHz 3km 30m 1.5m",
+      "checks": {
+        "fspl_db": [101.08, 0.01],
+        "path_loss_db": [106.41, 0.02],
+        "crossover_m": [1697.6, 0.5]
+      }
+    },
+    {
+      "id": 7,
+      "prompt": "What's the EIRP of a 5 W radio into 1.5 dB of cable and a 3 dBi antenna, in dBm and watts?",
+      "expected_output": "EIRP is 38.49 dBm (7.06 W) and ERP is 36.34 dBm.",
+      "files": [],
+      "expectations": [
+        "Converts 5 W to 36.99 dBm before summing",
+        "Gives EIRP in both dBm and W"
+      ],
+      "command": "eirp 36.9897 --gtx 3 --ltx 1.5",
+      "checks": {"eirp_dBm": [38.49, 0.01], "eirp_W": [7.06, 0.01]}
+    }
+  ]
+}

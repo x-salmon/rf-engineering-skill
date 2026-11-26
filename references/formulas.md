@@ -45,6 +45,7 @@ Load this when you need to show working or check a hand calculation.
 - Okumura-Hata 150-1500 MHz, COST-231 to 2000 MHz, d 1-20 km, hb 30-200 m, hm 1-10 m
 - E (V/m) = sqrt(30 EIRP_W) / d; E(dBuV/m) = Prx(dBm) + 20 log f_MHz - G_dBi + 77.2
 - Doppler fd = v f cos(theta) / c
+- Ground reflection, obstacle clearance, Rayleigh fade margin, Albersheim/Swerling and detection range: see `link-budget.md`
 
 ## Antennas
 - Ae = G lambda^2 / (4 pi); dish G = eta (pi D / lambda)^2; HPBW ~= 70 lambda / D deg

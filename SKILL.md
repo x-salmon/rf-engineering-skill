@@ -1,6 +1,6 @@
 ---
 name: rf-engineering
-description: RF and radio engineering calculator with references. Use for any RF math or radio-system question - dBm/W/uV conversions, link budgets, path loss (free-space, Hata, two-ray), terrain path profiles with knife-edge/Deygout diffraction, ITU-R rain fade (P.530/P.838) and gas absorption (P.676), Fresnel zones and radio horizon, BER/Eb/N0/Shannon capacity, satellite look angles/G/T/C/N0/orbit Doppler, radar range equation, polarization loss, phase noise to jitter, reciprocal mixing, mixer spur/image planning, Bessel/elliptic filters, Pi/T/stub matching, E-series parts, antenna arrays/isolation/helix/patch, plots (Smith, path profile), noise floor and sensitivity, Friis noise/IP3 cascades, IMD products, VSWR/return loss/mismatch, coax cable loss, microstrip/coax impedance, L-matching, LC filter design, antenna gain/aperture, field strength, Doppler, FCC RF exposure (MPE), aviation VHF 8.33/25 kHz channel names, Touchstone .s1p/.s2p sweep analysis, spectrum-analyzer/sig-gen control over VISA, and install/test checklists (grounding, connector torque, sweep acceptance, FAT/SAT).
+description: RF and radio engineering calculator with references. Use for any RF math or radio-system question - dBm/W/uV conversions, link budgets (EIRP, sensitivity, Rayleigh fade margin, max range), path loss (free-space, Hata, two-ray over real ground), Fresnel clearance at an obstacle, radar and passive-RF detection range for small aircraft/drones (Albersheim, Swerling), terrain path profiles with knife-edge/Deygout diffraction, ITU-R rain fade (P.530/P.838) and gas absorption (P.676), Fresnel zones and radio horizon, BER/Eb/N0/Shannon capacity, satellite look angles/G/T/C/N0/orbit Doppler, radar range equation, polarization loss, phase noise to jitter, reciprocal mixing, mixer spur/image planning, Bessel/elliptic filters, Pi/T/stub matching, E-series parts, antenna arrays/isolation/helix/patch, plots (Smith, path profile), noise floor and sensitivity, Friis noise/IP3 cascades, IMD products, VSWR/return loss/mismatch, coax cable loss, microstrip/coax impedance, L-matching, LC filter design, antenna gain/aperture, field strength, Doppler, FCC RF exposure (MPE), aviation VHF 8.33/25 kHz channel names, Touchstone .s1p/.s2p sweep analysis, spectrum-analyzer/sig-gen control over VISA, and install/test checklists (grounding, connector torque, sweep acceptance, FAT/SAT).
 ---
 
 # RF engineering
@@ -83,6 +83,23 @@ command for structured output. `rfcalc.py <cmd> -h` lists every option.
 | Antenna isolation | `isolation 150MHz 4m --mode vertical` |
 | Helix / patch | `helix 1.2GHz 10` / `patch 2.45GHz --er 4.4 --h 1.6mm` |
 
+### Link budget and detection (rflink)
+| Task | Command |
+|---|---|
+| EIRP / ERP | `eirp 37 --gtx 3 --ltx 1.5` |
+| Sensitivity | `sens 25kHz --nf 8 --snr 10` |
+| Rayleigh fade margin | `fademargin --reliability 99.9` / `fademargin --margin 15` |
+| Free space vs two-ray over ground | `pathloss 900MHz 3km 30m 1.5m --ground average --pol v` (sea fresh-water wet average dry pec) |
+| Obstacle Fresnel clearance | `clearance 6GHz 20km 8km --htx 140m --hrx 120m --hobs 110m` (heights on one datum, e.g. ASL) |
+| Link budget + max range | `budget --f 900MHz --d 5km --ptx 30 --gtx 6 --grx 3 --bw 200kHz --nf 7 --snr 9 --reliability 99 --model tworay --ht 30m --hr 1.5m` |
+| Radar detection range vs RCS | `detect-radar --pt 10 --g 30 --f 10GHz --rcs 0.01 0.1 --bw 1MHz --nf 5 --losses 6 --pulses 64 --hradar 5m --htarget 100m` |
+| Passive RF detection range | `detect-rf --eirp 20 --f 2.44GHz --bw 10MHz --nf 6 --g 10 --hsensor 10m --htarget 100m` |
+
+`budget` takes `--sens` directly, or computes it from `--bw --nf --snr`. Required margin comes from `--fade`
+or `--reliability` (Rayleigh). Two-ray range is scanned: `max_range_km` is continuous coverage up to the first null, and `last_lobe_km` is the farthest lobe that closes again (intermittent, so never quote it as coverage).
+`detect-radar` uses Albersheim (`--target steady`, `--noncoh N`) or exact Swerling 1 (`--target swerling1`)
+for the required SNR, and `--pulses` for coherent gain.
+
 ## Plots: `scripts/rfplot.py` (matplotlib)
 `smith f.s1p`, `sweep f.s2p`, `filter 5 --kind chebyshev`, `profile p.csv --f 6GHz --htx 30 --hrx 30`,
 `array 8 0.5 --steer 20`, each with `--out file.png`. Show the PNG to the user with the Read tool.
@@ -97,6 +114,7 @@ the RL threshold, IL / -3 dB passband / group delay for .s2p, and values at chos
 
 ## References (load on demand)
 - `references/formulas.md`: every equation used, for showing working
+- `references/link-budget.md`: rflink formulas, textbook check values and sources (ITU-R, Rappaport, Skolnik, Richards)
 - `references/bands.md`: aviation, maritime, LMR, ISM, amateur allocations; 8.33 kHz naming
 - `references/standards-checklists.md`: R56 / FAA-STD-019 / MIL-STD-188-124, torque, sweep acceptance, FAT/SAT
 - `references/instruments.md`: SCPI tables, VISA strings, scikit-rf/scipy/GNU Radio starters
@@ -112,5 +130,8 @@ the RL threshold, IL / -3 dB passband / group delay for .s2p, and values at chos
 4. MPE output is a screening estimate, not a compliance study.
 5. Optional extras (scipy, itur, matplotlib, pyvisa) are listed in `requirements-optional.txt`. If one is
    missing, say so and give the install command.
-6. `docs/examples.md` has 22 worked problems with real output; use them as answer templates.
-7. Use scikit-rf/scipy only for work the scripts don't cover, and check the current API through context7 first.
+6. `docs/examples.md` has 28 worked problems with real output; use them as answer templates.
+7. Detection ranges are free-space upper bounds. Give a band across several RCS or EIRP values, and say
+   that clutter, multipath, terrain masking and target aspect usually cut them. Use only generic, public
+   engineering: no specific operator's or vendor's system parameters.
+8. Use scikit-rf/scipy only for work the scripts don't cover, and check the current API through context7 first.

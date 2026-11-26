@@ -307,3 +307,103 @@ S_mW_cm2: 0.1856
 percent_of_limit: 92.805
 compliant: True
 ```
+
+## 900 MHz mobile link: does it close at 99 % Rayleigh reliability?
+
+```console
+$ rfcalc.py budget --f 900MHz --d 5km --ptx 30 --gtx 6 --grx 3 --ltx 2 --lrx 2 --bw 200kHz --nf 7 --snr 9 --reliability 99 --model tworay --ht 30m --hr 1.5m
+eirp_dBm: 34
+path_loss_model: tworay
+path_loss_db: 115.0608
+misc_loss_db: 0
+received_dBm: -80.0608
+noise_floor_dBm: -113.9649
+snr_db: 33.9041
+sensitivity_source: kTB + NF + SNR
+sensitivity_dBm: -104.9649
+required_fade_margin_db: 19.9782
+link_margin_db: 24.9041
+excess_margin_db: 4.9259
+closes: True
+max_range_km: 6.6455
+radio_horizon_km: 27.6243
+```
+
+## Two-ray over average ground vs free space
+
+```console
+$ rfcalc.py pathloss 900MHz 3km 30m 1.5m
+path_loss_db: 106.4064
+fspl_db: 101.0751
+two_ray_far_db: 106.0206
+crossover_m: 1697.6345
+grazing_angle_deg: 0.6016
+gamma_mag: 0.9192
+gamma_phase_deg: -179.997
+ground: average
+pol: v
+two_ray_minus_fspl_db: 5.3314
+region: beyond crossover (40 dB/decade)
+```
+
+## Does a ridge 8 km out clear 60 % of F1 on a 20 km, 6 GHz hop?
+
+```console
+$ rfcalc.py clearance 6GHz 20km 8km --htx 140m --hrx 120m --hobs 110m
+los_height_m: 132
+earth_bulge_m: 5.6506
+fresnel_f1_m: 15.4866
+clearance_m: 16.3494
+clearance_pct_f1: 105.5714
+required_m: 9.2919
+meets_requirement: True
+raise_both_ends_by_m: 0
+fresnel_v: -1.493
+knife_edge_loss_db: 0
+k_factor: 1.3333
+```
+
+## Fade margin for 99.9 % in Rayleigh fading
+
+```console
+$ rfcalc.py fademargin --reliability 99.9
+reliability_pct: 99.9
+fade_margin_db: 29.9978
+outage_pct: 0.1
+model: Rayleigh (no line-of-sight component)
+```
+
+## X-band radar detection range for a small drone (RCS band)
+
+```console
+$ rfcalc.py detect-radar --pt 10 --g 30 --f 10GHz --rcs 0.01 0.03 0.1 --bw 1MHz --nf 5 --losses 6 --pulses 64 --hradar 5m --htarget 100m
+required_snr_db: 13.1145
+detection_model: Albersheim (Swerling 0)
+pd: 0.9
+pfa: 1u
+coherent_pulses: 64
+noncoherent_pulses: 1
+ranges:
+  rcs_m2=0.01, rcs_dBsm=-20, free_space_range_km=1.2944, detection_range_km=1.2944, horizon_limited=False
+  rcs_m2=0.03, rcs_dBsm=-15.2288, free_space_range_km=1.7035, detection_range_km=1.7035, horizon_limited=False
+  rcs_m2=0.1, rcs_dBsm=-10, free_space_range_km=2.3018, detection_range_km=2.3018, horizon_limited=False
+radar_horizon_km: 50.4349
+warnings:
+  free-space estimate: ground clutter, multipath and terrain masking usually shorten it for low-flying targets
+```
+
+## Passive detection range of a 2.4 GHz drone video link
+
+```console
+$ rfcalc.py detect-rf --eirp 20 --f 2.44GHz --bw 10MHz --nf 6 --g 10 --hsensor 10m --htarget 100m
+noise_floor_dBm: -97.9752
+sensitivity_dBm: -87.9752
+kTB_dBm: -103.9752
+allowed_path_loss_db: 117.9752
+free_space_range_km: 7.7443
+two_ray_range_km: 2.6927
+radio_horizon_km: 54.2526
+detection_range_km: 2.6927
+last_lobe_km: 12.4034
+note: emitter EIRP and duty cycle vary by model and mode; a hopping or bursty signal needs the sensor bandwidth and dwell to match it
+```

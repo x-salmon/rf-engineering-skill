@@ -13,6 +13,7 @@ import sys
 import rfcomms
 import rfcore as c
 import rfdesign
+import rflink
 import rfpath
 import rfprop as p
 
@@ -259,7 +260,7 @@ def build_parser():
     a.add_argument("--freq", action="store_true", help="value is a frequency in MHz")
     a.add_argument("--spacing", type=float, default=8.33)
 
-    for mod in (rfpath, rfcomms, rfdesign):
+    for mod in (rfpath, rfcomms, rfdesign, rflink):
         mod.register(sp)
     return ap
 

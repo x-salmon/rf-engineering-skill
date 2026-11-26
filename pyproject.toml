@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rf-engineering-skill"
-version = "2.1.0"
-description = "RF engineering calculators: links, terrain, ITU-R, comms, satellite, radar, filters, matching, antennas"
+version = "2.2.0"
+description = "RF engineering calculators: link budgets, detection range, terrain, ITU-R, comms, satellite, radar, filters, matching, antennas"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
@@ -22,5 +22,5 @@ rfinstrument = "instrument:main"
 
 [tool.setuptools]
 package-dir = { "" = "scripts" }
-py-modules = ["rfargs", "rfcalc", "rfcomms", "rfcore", "rfdesign", "rfpath", "rfplot",
+py-modules = ["rfargs", "rfcalc", "rfcomms", "rfcore", "rfdesign", "rflink", "rfpath", "rfplot",
               "rfprop", "touchstone", "instrument"]

@@ -41,6 +41,18 @@ EXAMPLES = [
     ("2.45 GHz patch on 1.6 mm FR-4", "patch 2.45GHz --er 4.4 --h 1.6mm"),
     ("Cable loss: 45 m of LMR-400 at 2.4 GHz", "cable lmr-400 2.4GHz 45m"),
     ("Is 50 W ERP at 150 MHz safe 3 m from the public?", "mpe 150MHz 82 --d 3m"),
+    ("900 MHz mobile link: does it close at 99 % Rayleigh reliability?",
+     ("budget --f 900MHz --d 5km --ptx 30 --gtx 6 --grx 3 --ltx 2 --lrx 2 --bw 200kHz --nf 7 "
+      "--snr 9 --reliability 99 --model tworay --ht 30m --hr 1.5m")),
+    ("Two-ray over average ground vs free space", "pathloss 900MHz 3km 30m 1.5m"),
+    ("Does a ridge 8 km out clear 60 % of F1 on a 20 km, 6 GHz hop?",
+     "clearance 6GHz 20km 8km --htx 140m --hrx 120m --hobs 110m"),
+    ("Fade margin for 99.9 % in Rayleigh fading", "fademargin --reliability 99.9"),
+    ("X-band radar detection range for a small drone (RCS band)",
+     ("detect-radar --pt 10 --g 30 --f 10GHz --rcs 0.01 0.03 0.1 --bw 1MHz --nf 5 --losses 6 "
+      "--pulses 64 --hradar 5m --htarget 100m")),
+    ("Passive detection range of a 2.4 GHz drone video link",
+     "detect-rf --eirp 20 --f 2.44GHz --bw 10MHz --nf 6 --g 10 --hsensor 10m --htarget 100m"),
 ]
 
 
